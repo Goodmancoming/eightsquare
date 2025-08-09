@@ -1,0 +1,52 @@
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local chairsFolder = Workspace:WaitForChild("AnomalousChairs")
+
+-- Grab all chair models from the folder
+local chairs = {}
+for _, chair in ipairs(chairsFolder:GetChildren()) do
+	if chair:IsA("Model") and chair.PrimaryPart then
+		table.insert(chairs, chair)
+	end
+end
+
+local function isPlayerSittingOnChair(chairModel)
+	local character = LocalPlayer.Character
+	if not character then return false end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return false end
+	local seatPart = humanoid.SeatPart
+	if not seatPart then return false end
+	return seatPart:IsDescendantOf(chairModel)
+end
+
+RunService.RenderStepped:Connect(function()
+	local character = LocalPlayer.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart")
+
+	for _, chairModel in ipairs(chairs) do
+		if chairModel.Parent and chairModel.PrimaryPart then
+			local chairPos = chairModel.PrimaryPart.Position
+			local targetPos
+
+			if isPlayerSittingOnChair(chairModel) then
+				targetPos = Vector3.new(0, chairPos.Y, 0)
+			elseif hrp then
+				local playerPos = hrp.Position
+				targetPos = Vector3.new(playerPos.X, chairPos.Y, playerPos.Z)
+			end
+
+			if targetPos then
+				local lookVector = (targetPos - chairPos)
+				if lookVector.Magnitude > 0.01 then
+					lookVector = lookVector.Unit
+					local newPrimaryCFrame = CFrame.lookAt(chairPos, chairPos + lookVector, Vector3.new(0, 1, 0))
+					chairModel:PivotTo(newPrimaryCFrame)
+				end
+			end
+		end
+	end
+end)

@@ -1,1 +1,1 @@
-print("Hello world, from client!")
+warn("Hello world, from client!")
